@@ -24,6 +24,7 @@ function App() {
   const [holidays, setHolidays] = useLocalStorage('at_holidays', []);
   const [settings, setSettings] = useLocalStorage('at_settings', { targetAttendance: 75, semesterEndDate: '' });
   const [attendanceLogs, setAttendanceLogs] = useLocalStorage('at_logs', {}); 
+  const [extraClasses, setExtraClasses] = useLocalStorage('at_extraClasses', []);
   // attendanceLogs: { 'YYYY-MM-DD': { timetableId: 'attended' | 'missed' } }
 
   const renderTab = () => {
@@ -35,6 +36,7 @@ function App() {
           attendanceLogs={attendanceLogs} setAttendanceLogs={setAttendanceLogs}
           settings={settings}
           holidays={holidays}
+          extraClasses={extraClasses} setExtraClasses={setExtraClasses}
         />;
       case TABS.TIMETABLE:
         return <Timetable 
