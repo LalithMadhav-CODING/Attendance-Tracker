@@ -1,4 +1,5 @@
 import React from 'react';
+import { sendNotification } from '../useNotifications';
 
 export default function SettingsView({ settings, setSettings }) {
   const updateSetting = (key, value) => {
@@ -83,6 +84,53 @@ export default function SettingsView({ settings, setSettings }) {
               onChange={(e) => updateSetting('notificationOffset', parseInt(e.target.value) || 0)} 
             />
           </label>
+
+          {settings.notificationsEnabled && (
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <button
+                onClick={async () => {
+                  const success = await sendNotification("Test Alert 🔔", {
+                    body: "Attendance Tracker notifications are working properly!",
+                    tag: `test-alert-${Date.now()}`
+                  });
+                  if (!success) {
+                    alert("Could not trigger notification. Please check browser permissions.");
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                Send Test Alert
+              </button>
+
+              <button
+                onClick={() => {
+                  localStorage.removeItem('at_notified_classes');
+                  alert('Notification history reset. Today\'s classes can be notified again.');
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                Reset Alert History
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
