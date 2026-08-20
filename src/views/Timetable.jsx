@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil, Check } from 'lucide-react';
 
 export default function Timetable({ courses, setCourses, timetable, setTimetable }) {
   const [newCourseName, setNewCourseName] = useState('');
   const [initAttended, setInitAttended] = useState(0);
   const [initMissed, setInitMissed] = useState(0);
   const [initTotal, setInitTotal] = useState(0);
+
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editCourseData, setEditCourseData] = useState({ name: '', attended: 0, missed: 0, total: 0 });
 
   const [tDay, setTDay] = useState('1'); // Monday default
   const [tCourse, setTCourse] = useState('');
@@ -38,6 +41,26 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
     setInitAttended(0);
     setInitMissed(0);
     setInitTotal(0);
+  };
+
+  const saveEditCourse = (id) => {
+    const attended = Math.max(0, parseInt(editCourseData.attended) || 0);
+    const missed = Math.max(0, parseInt(editCourseData.missed) || 0);
+    const total = Math.max(0, parseInt(editCourseData.total) || 0);
+    
+    if (attended + missed > total) {
+      alert("Attended + Missed cannot exceed Total Classes.");
+      return;
+    }
+
+    setCourses(courses.map(c => c.id === id ? {
+      ...c,
+      name: editCourseData.name.trim(),
+      attended: attended,
+      missed: missed,
+      total: total
+    } : c));
+    setEditingCourseId(null);
   };
 
   const deleteCourse = (id) => {
@@ -91,9 +114,31 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
         {courses.length > 0 && (
           <div style={{ marginTop: '20px' }}>
             {courses.map(c => (
-              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border-color)' }}>
-                <span>{c.name} ({c.attended}/{c.total})</span>
-                <button onClick={() => deleteCourse(c.id)}><Trash2 size={20} color="var(--btn-cross)"/></button>
+              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-color)' }}>
+                {editingCourseId === c.id ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, marginRight: '10px' }}>
+                    <input value={editCourseData.name} onChange={e => setEditCourseData({...editCourseData, name: e.target.value})} placeholder="Course Name" />
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <input type="number" min="0" placeholder="Attended" value={editCourseData.attended} onChange={e => setEditCourseData({...editCourseData, attended: e.target.value})} style={{ width: '33%' }} />
+                      <input type="number" min="0" placeholder="Missed" value={editCourseData.missed} onChange={e => setEditCourseData({...editCourseData, missed: e.target.value})} style={{ width: '33%' }} />
+                      <input type="number" min="0" placeholder="Total" value={editCourseData.total} onChange={e => setEditCourseData({...editCourseData, total: e.target.value})} style={{ width: '33%' }} />
+                    </div>
+                  </div>
+                ) : (
+                  <span>{c.name} ({c.attended}/{c.total})</span>
+                )}
+                
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {editingCourseId === c.id ? (
+                    <button onClick={() => saveEditCourse(c.id)}><Check size={20} color="var(--btn-check)"/></button>
+                  ) : (
+                    <button onClick={() => {
+                      setEditingCourseId(c.id);
+                      setEditCourseData({ name: c.name, attended: c.attended, missed: c.missed || 0, total: c.total });
+                    }}><Pencil size={20} color="var(--text-secondary)"/></button>
+                  )}
+                  <button onClick={() => deleteCourse(c.id)}><Trash2 size={20} color="var(--btn-cross)"/></button>
+                </div>
               </div>
             ))}
           </div>

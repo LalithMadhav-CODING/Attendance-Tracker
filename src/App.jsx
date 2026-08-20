@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Home, Calendar, CalendarOff, Settings } from 'lucide-react';
+import { Home, Calendar, CalendarOff, Settings, History } from 'lucide-react';
 import { useLocalStorage } from './useLocalStorage';
 import { useNotifications } from './useNotifications';
 import Dashboard from './views/Dashboard';
 import Timetable from './views/Timetable';
 import Absences from './views/Absences';
 import SettingsView from './views/Settings';
+import Logs from './views/Logs';
 import LoadingScreen from './components/LoadingScreen';
 import './index.css';
 
@@ -13,6 +14,7 @@ const TABS = {
   DASHBOARD: 'dashboard',
   TIMETABLE: 'timetable',
   ABSENCES: 'absences',
+  LOGS: 'logs',
   SETTINGS: 'settings',
 };
 
@@ -58,6 +60,13 @@ function App() {
         return <SettingsView 
           settings={settings} setSettings={setSettings}
         />;
+      case TABS.LOGS:
+        return <Logs 
+          attendanceLogs={attendanceLogs} 
+          timetable={timetable} 
+          extraClasses={extraClasses} 
+          courses={courses} 
+        />;
       default:
         return null;
     }
@@ -85,6 +94,7 @@ function App() {
         <TabButton icon={<Home size={28}/>} active={activeTab === TABS.DASHBOARD} onClick={() => setActiveTab(TABS.DASHBOARD)} />
         <TabButton icon={<Calendar size={28}/>} active={activeTab === TABS.TIMETABLE} onClick={() => setActiveTab(TABS.TIMETABLE)} />
         <TabButton icon={<CalendarOff size={28}/>} active={activeTab === TABS.ABSENCES} onClick={() => setActiveTab(TABS.ABSENCES)} />
+        <TabButton icon={<History size={28}/>} active={activeTab === TABS.LOGS} onClick={() => setActiveTab(TABS.LOGS)} />
         <TabButton icon={<Settings size={28}/>} active={activeTab === TABS.SETTINGS} onClick={() => setActiveTab(TABS.SETTINGS)} />
       </nav>
     </div>

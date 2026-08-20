@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import { Check, X, MoreVertical, Plus } from 'lucide-react';
 
 export default function Dashboard({ courses, setCourses, timetable, attendanceLogs, setAttendanceLogs, settings, holidays, extraClasses, setExtraClasses }) {
-  const today = new Date();
-  const offset = today.getTimezoneOffset()
-  const todayDate = new Date(today.getTime() - (offset*60*1000)).toISOString().split('T')[0]
+  const [todayDate] = useState(() => {
+    const today = new Date();
+    const offset = today.getTimezoneOffset();
+    return new Date(today.getTime() - (offset*60*1000)).toISOString().split('T')[0];
+  });
   
-  const dayOfWeek = today.getDay(); 
+  const [selectedDate, setSelectedDate] = useState(todayDate);
+  const [calMonth, setCalMonth] = useState(parseInt(todayDate.split('-')[1]) - 1);
+  const [calYear, setCalYear] = useState(parseInt(todayDate.split('-')[0]));
   
-  const isHoliday = holidays.includes(todayDate);
+  const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay(); 
   
-  const todaysExtra = (extraClasses || []).filter(e => e.date === todayDate);
+  const isHoliday = holidays.includes(selectedDate);
+  
+  const todaysExtra = (extraClasses || []).filter(e => e.date === selectedDate);
   const todaysClasses = [...timetable.filter(t => parseInt(t.dayOfWeek) === dayOfWeek), ...todaysExtra]
     .sort((a,b) => a.time.localeCompare(b.time));
 
@@ -25,7 +31,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
   }
 
   const markAttendance = (timetableItem, courseId, status) => {
-    const currentLog = attendanceLogs[todayDate]?.[timetableItem.id];
+    const currentLog = attendanceLogs[selectedDate]?.[timetableItem.id];
     if (currentLog === status) return;
 
     setCourses(prev => prev.map(c => {
@@ -50,13 +56,13 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
     setAttendanceLogs(prev => {
       const newLogs = {
         ...prev,
-        [todayDate]: {
-          ...(prev[todayDate] || {}),
+        [selectedDate]: {
+          ...(prev[selectedDate] || {}),
           [timetableItem.id]: status
         }
       };
       if (status === 'none') {
-        delete newLogs[todayDate][timetableItem.id];
+        delete newLogs[selectedDate][timetableItem.id];
       }
       return newLogs;
     });
@@ -67,7 +73,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
     if(!eCourse || !eTime || !eClassroom) return;
     setExtraClasses([...(extraClasses || []), {
       id: 'ext_' + Date.now(),
-      date: todayDate,
+      date: selectedDate,
       courseId: eCourse,
       time: eTime,
       classroom: eClassroom
@@ -87,7 +93,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ margin: 0 }}>Today's Classes</h2>
+        <h2 style={{ margin: 0 }}>{selectedDate === todayDate ? "Today's Classes" : `Classes for ${selectedDate}`}</h2>
         <button 
           onClick={() => setShowExtraModal(true)}
           style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'var(--border-color)', padding: '8px 12px', borderRadius: '8px' }}
@@ -122,7 +128,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
         const course = courses.find(c => c.id === tClass.courseId);
         if (!course) return null;
         
-        const log = attendanceLogs[todayDate]?.[tClass.id];
+        const log = attendanceLogs[selectedDate]?.[tClass.id];
         const isCancelled = log === 'cancelled';
         const percent = course.total === 0 ? 0 : Math.round((course.attended / course.total) * 100);
         const target = (settings.targetAttendance || 75) / 100;
@@ -232,6 +238,47 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
           </div>
         );
       })}
+
+      <div style={{ marginTop: '30px', paddingBottom: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h3 style={{ margin: 0, fontSize: '24px' }}>Calendar</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <button onClick={() => { if(calMonth === 0) { setCalMonth(11); setCalYear(calYear-1); } else { setCalMonth(calMonth-1); } }} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer' }}>&lt;</button>
+            <span style={{ fontSize: '18px', width: '140px', textAlign: 'center' }}>
+              {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][calMonth]} {calYear}
+            </span>
+            <button onClick={() => { if(calMonth === 11) { setCalMonth(0); setCalYear(calYear+1); } else { setCalMonth(calMonth+1); } }} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer' }}>&gt;</button>
+          </div>
+        </div>
+        <div className="calendar-grid">
+          {['S','M','T','W','T','F','S'].map((d, i) => <div key={`h-${i}`} className="calendar-header-cell">{d}</div>)}
+          {Array.from({ length: new Date(calYear, calMonth, 1).getDay() }).map((_, i) => (
+            <div key={`empty-${i}`} className="calendar-cell empty"></div>
+          ))}
+          {Array.from({ length: new Date(calYear, calMonth + 1, 0).getDate() }).map((_, i) => {
+            const dateStr = `${calYear}-${String(calMonth+1).padStart(2, '0')}-${String(i+1).padStart(2, '0')}`;
+            const isSelected = dateStr === selectedDate;
+            const isToday = dateStr === todayDate;
+            const hasClasses = timetable.some(t => parseInt(t.dayOfWeek) === new Date(dateStr + 'T00:00:00').getDay());
+            
+            let classNames = 'calendar-cell';
+            if (isSelected) classNames += ' selected';
+            if (isToday) classNames += ' today';
+            if (hasClasses) classNames += ' has-classes';
+            else classNames += ' no-classes';
+
+            return (
+              <div 
+                key={i} 
+                className={classNames}
+                onClick={() => setSelectedDate(dateStr)}
+              >
+                {i + 1}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

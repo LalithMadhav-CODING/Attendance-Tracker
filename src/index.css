@@ -98,3 +98,92 @@ input:focus, select:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* Calendar Grid Styles */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  border: 1px solid var(--border-color);
+}
+
+.calendar-header-cell {
+  text-align: center;
+  padding: 10px 0;
+  border-bottom: 2px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+.calendar-header-cell:nth-child(7n) {
+  border-right: none;
+}
+
+.calendar-cell {
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+.calendar-cell:nth-child(7n) {
+  border-right: none;
+}
+
+.calendar-cell.empty {
+  cursor: default;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.calendar-cell:not(.empty):hover {
+  background-color: var(--border-color);
+  transform: scale(1.1);
+  z-index: 2;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  border-right: none;
+  border-bottom: none;
+}
+
+.calendar-cell.selected {
+  background-color: var(--btn-check) !important;
+  color: #0f0a07 !important;
+  font-weight: bold;
+  transform: scale(1.05);
+  z-index: 1;
+  border-radius: 8px;
+  border-right: none;
+  border-bottom: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.calendar-cell.today::after {
+  content: '';
+  position: absolute;
+  bottom: 15%;
+  width: 6px;
+  height: 6px;
+  background-color: var(--btn-cross);
+  border-radius: 50%;
+}
+
+.calendar-cell.selected.today::after {
+  background-color: #0f0a07;
+}
+
+.calendar-cell.has-classes {
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.calendar-cell.no-classes {
+  color: var(--text-secondary);
+}
