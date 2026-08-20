@@ -19,7 +19,13 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
 
   const addCourse = (e) => {
     e.preventDefault();
-    if (!newCourseName.trim()) return;
+    const cleanName = newCourseName.trim();
+    if (!cleanName) return;
+    
+    if (courses.some(c => c.name.toLowerCase() === cleanName.toLowerCase())) {
+      alert("A course with this name already exists.");
+      return;
+    }
     
     const attended = Math.max(0, parseInt(initAttended) || 0);
     const missed = Math.max(0, parseInt(initMissed) || 0);
@@ -32,7 +38,7 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
 
     setCourses([...courses, {
       id: Date.now().toString(),
-      name: newCourseName.trim(),
+      name: cleanName,
       attended: attended,
       missed: missed,
       total: total
@@ -44,6 +50,12 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
   };
 
   const saveEditCourse = (id) => {
+    const cleanName = editCourseData.name.trim();
+    if (courses.some(c => c.id !== id && c.name.toLowerCase() === cleanName.toLowerCase())) {
+      alert("A course with this name already exists.");
+      return;
+    }
+
     const attended = Math.max(0, parseInt(editCourseData.attended) || 0);
     const missed = Math.max(0, parseInt(editCourseData.missed) || 0);
     const total = Math.max(0, parseInt(editCourseData.total) || 0);
@@ -55,7 +67,7 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
 
     setCourses(courses.map(c => c.id === id ? {
       ...c,
-      name: editCourseData.name.trim(),
+      name: cleanName,
       attended: attended,
       missed: missed,
       total: total
@@ -73,9 +85,23 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
   const addTimetableEntry = (e) => {
     e.preventDefault();
     if (!tCourse || !tTime || !tClassroom) return;
+    
+    const dayInt = parseInt(tDay);
+
+    if (timetable.some(t => t.dayOfWeek === dayInt && t.time === tTime && t.courseId === tCourse)) {
+      alert("This exact class is already scheduled at this time.");
+      return;
+    }
+    
+    if (timetable.some(t => t.dayOfWeek === dayInt && t.time === tTime)) {
+      if (!window.confirm("Another class is already scheduled at this time. Are you sure you want to add it?")) {
+        return;
+      }
+    }
+
     setTimetable([...timetable, {
       id: Date.now().toString(),
-      dayOfWeek: parseInt(tDay),
+      dayOfWeek: dayInt,
       courseId: tCourse,
       time: tTime,
       classroom: tClassroom

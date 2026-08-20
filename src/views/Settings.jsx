@@ -48,14 +48,36 @@ export default function SettingsView({ settings, setSettings }) {
           </div>
         </div>
         
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '20px' }}>
-          <span>Semester End Date</span>
-          <input 
-            type="date" 
-            value={settings.semesterEndDate || ''} 
-            onChange={(e) => updateSetting('semesterEndDate', e.target.value)} 
-          />
-        </label>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
+            <span>Semester Start Date</span>
+            <input 
+              type="date" 
+              value={settings.semesterStartDate || ''} 
+              onChange={(e) => {
+                if (settings.semesterEndDate && e.target.value && e.target.value > settings.semesterEndDate) {
+                  alert("Semester Start Date cannot be after the End Date.");
+                } else {
+                  updateSetting('semesterStartDate', e.target.value);
+                }
+              }} 
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
+            <span>Semester End Date</span>
+            <input 
+              type="date" 
+              value={settings.semesterEndDate || ''} 
+              onChange={(e) => {
+                if (settings.semesterStartDate && e.target.value && e.target.value < settings.semesterStartDate) {
+                  alert("Semester End Date cannot be before the Start Date.");
+                } else {
+                  updateSetting('semesterEndDate', e.target.value);
+                }
+              }} 
+            />
+          </label>
+        </div>
 
         <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
           <h3 style={{ marginBottom: '15px' }}>Notifications</h3>

@@ -6,6 +6,7 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
   const [absenceEndDate, setAbsenceEndDate] = useState('');
   const [holidayStartDate, setHolidayStartDate] = useState('');
   const [holidayEndDate, setHolidayEndDate] = useState('');
+  const [holidayName, setHolidayName] = useState('');
 
   const addAbsence = (e) => {
     e.preventDefault();
@@ -20,12 +21,28 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
     }
 
     const newAbsences = new Set(plannedAbsences);
+    let hasClassesToSkip = false;
     
     while (curr <= end) {
       const offset = curr.getTimezoneOffset();
       const dateStr = new Date(curr.getTime() - (offset*60*1000)).toISOString().split('T')[0];
+      
+      if (holidays.some(h => h.date === dateStr)) {
+        alert(`Cannot add absence on ${dateStr} as it is already a holiday.`);
+        return;
+      }
+      
+      if (timetable.some(t => parseInt(t.dayOfWeek) === curr.getDay())) {
+        hasClassesToSkip = true;
+      }
+      
       newAbsences.add(dateStr);
       curr.setDate(curr.getDate() + 1);
+    }
+    
+    if (!hasClassesToSkip) {
+      alert("You have no classes scheduled on the selected date(s). No absence needed!");
+      return;
     }
     
     setPlannedAbsences(Array.from(newAbsences).sort());
@@ -49,38 +66,50 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
       return;
     }
 
-    const newHolidays = new Set(holidays);
+    const newHolidaysMap = new Map();
+    holidays.forEach(h => newHolidaysMap.set(h.date, h));
     
     while (curr <= end) {
       const offset = curr.getTimezoneOffset();
       const dateStr = new Date(curr.getTime() - (offset*60*1000)).toISOString().split('T')[0];
-      newHolidays.add(dateStr);
+      
+      if (plannedAbsences.includes(dateStr)) {
+        alert(`Cannot add holiday on ${dateStr} as it is marked as a planned absence. Please remove the absence first.`);
+        return;
+      }
+
+      newHolidaysMap.set(dateStr, { date: dateStr, name: holidayName.trim() });
       curr.setDate(curr.getDate() + 1);
     }
     
-    setHolidays(Array.from(newHolidays).sort());
+    setHolidays(Array.from(newHolidaysMap.values()).sort((a,b) => a.date.localeCompare(b.date)));
     setHolidayStartDate('');
     setHolidayEndDate('');
+    setHolidayName('');
   };
 
   const removeHoliday = (date) => {
-    setHolidays(holidays.filter(d => d !== date));
+    setHolidays(holidays.filter(h => h.date !== date));
   };
 
   // Projection Logic
   const getWarnings = () => {
-    if (!settings.semesterEndDate) return ["Please set Semester End Date in Settings to see warnings."];
+    if (!settings.semesterStartDate || !settings.semesterEndDate) {
+      return ["Please set both Semester Start and End Dates in Settings to see warnings."];
+    }
     
     const warnings = [];
     const today = new Date();
     today.setHours(0,0,0,0);
+    const start = new Date(settings.semesterStartDate);
     const end = new Date(settings.semesterEndDate);
     
+    if (end < start) return ["Semester End Date cannot be before Start Date."];
     if (end < today) return ["Semester End Date is in the past."];
 
+    const evaluationStart = today < start ? start : today;
     const target = (settings.targetAttendance || 75) / 100;
     
-
     // Now calculate impact of planned absences
     courses.forEach(c => {
       let finalTotal = c.total;
@@ -90,9 +119,9 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
       // Subtract absences
       plannedAbsences.forEach(dateStr => {
         const d = new Date(dateStr);
-        if (d > today && d <= end && !holidays.includes(dateStr)) {
+        if (d >= evaluationStart && d <= end && !holidays.some(h => h.date === dateStr)) {
           const dayOfWeek = d.getDay();
-          const missedClasses = timetable.filter(t => t.dayOfWeek === dayOfWeek && t.courseId === c.id);
+          const missedClasses = timetable.filter(t => parseInt(t.dayOfWeek) === dayOfWeek && t.courseId === c.id);
           finalAttended -= missedClasses.length;
         }
       });
@@ -158,13 +187,17 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
             <div style={{ fontSize: '16px', marginBottom: '5px' }}>To (Optional)</div>
             <input type="date" value={holidayEndDate} onChange={e => setHolidayEndDate(e.target.value)} style={{ width: '100%' }} />
           </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '16px', marginBottom: '5px' }}>Name (Optional)</div>
+            <input placeholder="e.g. Thanksgiving" value={holidayName} onChange={e => setHolidayName(e.target.value)} style={{ width: '100%' }} />
+          </div>
           <button type="submit" style={{ backgroundColor: 'var(--border-color)', padding: '10px', borderRadius: '8px', height: '45px' }}>Add</button>
         </form>
         <div style={{ marginTop: '10px' }}>
-          {holidays.map(d => (
-            <div key={d} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-              <span>{d}</span>
-              <button onClick={() => removeHoliday(d)}><Trash2 size={20} color="var(--btn-cross)"/></button>
+          {holidays.map(h => (
+            <div key={h.date} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+              <span>{h.date} {h.name ? `- ${h.name}` : ''}</span>
+              <button onClick={() => removeHoliday(h.date)}><Trash2 size={20} color="var(--btn-cross)"/></button>
             </div>
           ))}
         </div>

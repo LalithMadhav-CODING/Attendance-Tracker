@@ -26,7 +26,9 @@ function App() {
   const [courses, setCourses] = useLocalStorage('at_courses', []);
   const [timetable, setTimetable] = useLocalStorage('at_timetable', []);
   const [plannedAbsences, setPlannedAbsences] = useLocalStorage('at_plannedAbsences', []);
-  const [holidays, setHolidays] = useLocalStorage('at_holidays', []);
+  const [holidaysRaw, setHolidaysRaw] = useLocalStorage('at_holidays', []);
+  const holidays = holidaysRaw.map(h => typeof h === 'string' ? { date: h, name: '' } : h);
+  const setHolidays = (newHolidays) => setHolidaysRaw(newHolidays);
   const [settings, setSettings] = useLocalStorage('at_settings', { targetAttendance: 75, semesterEndDate: '' });
   const [attendanceLogs, setAttendanceLogs] = useLocalStorage('at_logs', {}); 
   const [extraClasses, setExtraClasses] = useLocalStorage('at_extraClasses', []);

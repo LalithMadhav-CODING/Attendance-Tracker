@@ -50,7 +50,7 @@ export function useNotifications(timetable, extraClasses, holidays, settings, co
       const todayDate = new Date(now.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
       
       const dayOfWeek = now.getDay();
-      const isHoliday = (holidays || []).includes(todayDate);
+      const isHoliday = (holidays || []).some(h => h.date === todayDate);
       if (isHoliday) return;
 
       const todaysExtra = (extraClasses || []).filter(e => e.date === todayDate);

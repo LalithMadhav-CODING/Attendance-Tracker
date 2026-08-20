@@ -16,15 +16,16 @@ function AnimatedText() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setProgress(p => (p + 1) % 11);
-    }, 200);
+      setProgress(p => {
+        if (p < 10) return p + 1;
+        clearInterval(interval);
+        return 10;
+      });
+    }, 250); // 250ms * 10 = 2.5 seconds to match the fade out timer
     return () => clearInterval(interval);
   }, []);
 
   const totalBlocks = 10;
-  const blocks = Array.from({ length: totalBlocks }, (_, i) => 
-    i < progress ? '📅' : '⬜'
-  ).join('');
 
   return (
     <div style={{
@@ -37,9 +38,27 @@ function AnimatedText() {
       fontFamily: "'VT323', 'DotGothic16', monospace",
       textShadow: `0 0 10px ${THEME.amber}`,
       pointerEvents: 'none',
+      width: '250px'
     }}>
-      <div style={{ fontSize: '24px', letterSpacing: '4px', marginBottom: '10px' }}>INITIALIZING...</div>
-      <div style={{ fontSize: '18px', letterSpacing: '2px', opacity: 0.8 }}>{blocks}</div>
+      <div style={{ fontSize: '24px', letterSpacing: '4px', marginBottom: '15px' }}>INITIALIZING...</div>
+      <div style={{ 
+        display: 'flex', 
+        gap: '4px',
+        padding: '4px',
+        border: `2px solid ${THEME.brightAmber}`,
+        borderRadius: '4px',
+        backgroundColor: `${THEME.brown}88`
+      }}>
+        {Array.from({ length: totalBlocks }).map((_, i) => (
+          <div key={i} style={{
+            flex: 1,
+            height: '16px',
+            backgroundColor: i < progress ? THEME.brightAmber : 'transparent',
+            boxShadow: i < progress ? `0 0 8px ${THEME.glowAmber}` : 'none',
+            transition: 'background-color 0.1s ease',
+          }} />
+        ))}
+      </div>
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
   
   const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay(); 
   
-  const isHoliday = holidays.includes(selectedDate);
+  const isHoliday = holidays.some(h => h.date === selectedDate);
   
   const todaysExtra = (extraClasses || []).filter(e => e.date === selectedDate);
   const todaysClasses = [...timetable.filter(t => parseInt(t.dayOfWeek) === dayOfWeek), ...todaysExtra]
@@ -71,6 +71,18 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
   const addExtraClass = (e) => {
     e.preventDefault();
     if(!eCourse || !eTime || !eClassroom) return;
+    
+    if (holidays.some(h => h.date === selectedDate)) {
+        alert("Cannot add an extra class on a holiday.");
+        return;
+    }
+    
+    if (todaysClasses.some(t => t.time === eTime)) {
+        if (!window.confirm("A class is already scheduled at this time today. Are you sure you want to add this extra class?")) {
+            return;
+        }
+    }
+
     setExtraClasses([...(extraClasses || []), {
       id: 'ext_' + Date.now(),
       date: selectedDate,
