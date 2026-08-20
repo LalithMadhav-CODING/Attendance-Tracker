@@ -17,22 +17,27 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
   const isHoliday = holidays.some(h => h.date === selectedDate);
   
   const todaysExtra = (extraClasses || []).filter(e => e.date === selectedDate);
-  const todaysClasses = [...timetable.filter(t => parseInt(t.dayOfWeek) === dayOfWeek), ...todaysExtra]
-    .sort((a,b) => a.time.localeCompare(b.time));
+  const todaysClasses = [
+    ...timetable.filter(t => parseInt(t.dayOfWeek) === dayOfWeek).map(t => ({...t, isExtra: false})), 
+    ...todaysExtra.map(t => ({...t, isExtra: true}))
+  ].sort((a,b) => a.time.localeCompare(b.time));
 
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [eCourse, setECourse] = useState('');
   const [eTime, setETime] = useState('');
   const [eClassroom, setEClassroom] = useState('');
+  const [attendanceConfirm, setAttendanceConfirm] = useState(null);
 
   if (isHoliday) {
     return <div style={{ textAlign: 'center', marginTop: '50px' }}><h2>Enjoy your holiday!</h2></div>;
   }
 
-  const markAttendance = (timetableItem, courseId, status) => {
+  const executeAttendance = (timetableItem, courseId, status) => {
     const currentLog = attendanceLogs[selectedDate]?.[timetableItem.id];
-    if (currentLog === status) return;
+    const finalStatus = (currentLog === status) ? 'none' : status;
+
+    if (currentLog === finalStatus) return;
 
     setCourses(prev => prev.map(c => {
       if (c.id === courseId) {
@@ -44,9 +49,9 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
         if (currentLog === 'cancelled') { newTotal++; }
         if (currentLog === 'missed') { newMissed--; }
 
-        if (status === 'attended') { newAttended++; }
-        if (status === 'cancelled') { newTotal--; }
-        if (status === 'missed') { newMissed++; }
+        if (finalStatus === 'attended') { newAttended++; }
+        if (finalStatus === 'cancelled') { newTotal--; }
+        if (finalStatus === 'missed') { newMissed++; }
 
         return { ...c, attended: newAttended, total: newTotal, missed: newMissed };
       }
@@ -58,14 +63,22 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
         ...prev,
         [selectedDate]: {
           ...(prev[selectedDate] || {}),
-          [timetableItem.id]: status
+          [timetableItem.id]: finalStatus
         }
       };
-      if (status === 'none') {
+      if (finalStatus === 'none') {
         delete newLogs[selectedDate][timetableItem.id];
       }
       return newLogs;
     });
+  };
+
+  const handleAttendanceClick = (timetableItem, courseId, status) => {
+    if (selectedDate !== todayDate) {
+      setAttendanceConfirm({ item: timetableItem, courseId, status });
+    } else {
+      executeAttendance(timetableItem, courseId, status);
+    }
   };
 
   const addExtraClass = (e) => {
@@ -163,7 +176,10 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
           <div key={tClass.id} className="card" style={{ opacity: isCancelled ? 0.6 : 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h1 style={{ fontSize: '32px', margin: 0 }}>{course.name}</h1>
+                <h1 style={{ fontSize: '32px', margin: 0 }}>
+                  {course.name}
+                  {tClass.isExtra && <span style={{ fontSize: '18px', color: 'var(--text-secondary)', marginLeft: '10px', verticalAlign: 'middle' }}>(Extra Class)</span>}
+                </h1>
                 {isCancelled && <span style={{ backgroundColor: 'var(--btn-cross)', padding: '2px 8px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold' }}>CANCELLED</span>}
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -190,7 +206,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
                 <h1 style={{ fontSize: '42px', margin: '0 0 10px 0' }}>{percent}%</h1>
                 <div style={{ display: 'flex', gap: '10px', position: 'relative' }}>
                   <button 
-                    onClick={() => markAttendance(tClass, course.id, 'attended')}
+                    onClick={() => handleAttendanceClick(tClass, course.id, 'attended')}
                     disabled={isCancelled}
                     style={{ 
                       backgroundColor: log === 'attended' ? 'var(--btn-check)' : 'transparent',
@@ -204,7 +220,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
                     <Check size={24} />
                   </button>
                   <button 
-                    onClick={() => markAttendance(tClass, course.id, 'missed')}
+                    onClick={() => handleAttendanceClick(tClass, course.id, 'missed')}
                     disabled={isCancelled}
                     style={{ 
                       backgroundColor: log === 'missed' ? 'var(--btn-cross)' : 'transparent',
@@ -234,7 +250,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
                       }}>
                         <button 
                           onClick={() => { 
-                            markAttendance(tClass, course.id, isCancelled ? 'none' : 'cancelled'); 
+                            handleAttendanceClick(tClass, course.id, isCancelled ? 'none' : 'cancelled'); 
                             setMenuOpenId(null); 
                           }}
                           style={{ width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isCancelled ? 'var(--text-primary)' : 'var(--btn-cross)' }}
@@ -291,6 +307,38 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
           })}
         </div>
       </div>
+
+      {attendanceConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000,
+          display: 'flex', justifyContent: 'center', alignItems: 'center'
+        }}>
+          <div className="card" style={{ maxWidth: '400px', width: '90%', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--btn-cross)', marginBottom: '15px' }}>Date Warning</h3>
+            <p style={{ fontSize: '18px', marginBottom: '20px' }}>
+              You are modifying attendance for a date that is not today ({selectedDate}). Are you sure you want to proceed?
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={() => {
+                  executeAttendance(attendanceConfirm.item, attendanceConfirm.courseId, attendanceConfirm.status);
+                  setAttendanceConfirm(null);
+                }}
+                style={{ flex: 1, backgroundColor: 'var(--border-color)', padding: '10px', borderRadius: '8px' }}
+              >
+                Proceed
+              </button>
+              <button 
+                onClick={() => setAttendanceConfirm(null)}
+                style={{ flex: 1, backgroundColor: 'transparent', border: '1px solid var(--border-color)', padding: '10px', borderRadius: '8px' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
