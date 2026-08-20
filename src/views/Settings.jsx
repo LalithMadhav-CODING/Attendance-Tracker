@@ -36,6 +36,55 @@ export default function SettingsView({ settings, setSettings }) {
           />
         </label>
 
+        <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+          <h3 style={{ marginBottom: '15px' }}>Notifications</h3>
+          
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+            <span>Enable Notifications</span>
+            <button 
+              onClick={() => {
+                if (!settings.notificationsEnabled) {
+                  if ('Notification' in window) {
+                    Notification.requestPermission().then(permission => {
+                      if (permission === 'granted') {
+                        updateSetting('notificationsEnabled', true);
+                      } else {
+                        alert('Notification permission denied');
+                      }
+                    });
+                  } else {
+                    alert('Notifications are not supported in this browser');
+                  }
+                } else {
+                  updateSetting('notificationsEnabled', false);
+                }
+              }}
+              style={{
+                backgroundColor: settings.notificationsEnabled ? 'var(--btn-check)' : 'transparent',
+                border: '2px solid var(--btn-check)',
+                color: settings.notificationsEnabled ? 'var(--bg-color)' : 'var(--text-primary)',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              {settings.notificationsEnabled ? 'Enabled' : 'Enable'}
+            </button>
+          </div>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '20px', opacity: settings.notificationsEnabled ? 1 : 0.5 }}>
+            <span>Notify before class (minutes)</span>
+            <input 
+              type="number" 
+              min="1" max="120" 
+              disabled={!settings.notificationsEnabled}
+              value={settings.notificationOffset ?? 15} 
+              onChange={(e) => updateSetting('notificationOffset', parseInt(e.target.value) || 0)} 
+            />
+          </label>
+        </div>
+
         <div style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
           <h3 style={{ color: 'var(--btn-cross)', marginBottom: '10px' }}>Danger Zone</h3>
           <button 

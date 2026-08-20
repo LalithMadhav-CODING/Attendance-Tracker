@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Home, Calendar, CalendarOff, Settings } from 'lucide-react';
 import { useLocalStorage } from './useLocalStorage';
+import { useNotifications } from './useNotifications';
 import Dashboard from './views/Dashboard';
 import Timetable from './views/Timetable';
 import Absences from './views/Absences';
@@ -26,6 +27,8 @@ function App() {
   const [attendanceLogs, setAttendanceLogs] = useLocalStorage('at_logs', {}); 
   const [extraClasses, setExtraClasses] = useLocalStorage('at_extraClasses', []);
   // attendanceLogs: { 'YYYY-MM-DD': { timetableId: 'attended' | 'missed' } }
+
+  useNotifications(timetable, extraClasses, holidays, settings, courses);
 
   const renderTab = () => {
     switch (activeTab) {
