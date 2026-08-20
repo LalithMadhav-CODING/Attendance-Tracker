@@ -6,6 +6,7 @@ import Dashboard from './views/Dashboard';
 import Timetable from './views/Timetable';
 import Absences from './views/Absences';
 import SettingsView from './views/Settings';
+import LoadingScreen from './components/LoadingScreen';
 import './index.css';
 
 const TABS = {
@@ -17,6 +18,7 @@ const TABS = {
 
 function App() {
   const [activeTab, setActiveTab] = useState(TABS.DASHBOARD);
+  const [isAppLoading, setIsAppLoading] = useState(true);
   
   // App State
   const [courses, setCourses] = useLocalStorage('at_courses', []);
@@ -62,12 +64,14 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '90vh' }}>
-      <header style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '36px', borderBottom: '2px solid var(--border-color)', paddingBottom: '10px' }}>ATTENDANCE TRACKER</h1>
-      </header>
-      
-      <main style={{ flex: 1, paddingBottom: '80px' }}>
+    <>
+      {isAppLoading && <LoadingScreen onComplete={() => setIsAppLoading(false)} />}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '90vh' }}>
+        <header style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+          <h1 style={{ fontSize: '36px', borderBottom: '2px solid var(--border-color)', paddingBottom: '10px' }}>ATTENDANCE TRACKER</h1>
+        </header>
+        
+        <main style={{ flex: 1, paddingBottom: '80px' }}>
         {renderTab()}
       </main>
 
@@ -84,6 +88,7 @@ function App() {
         <TabButton icon={<Settings size={28}/>} active={activeTab === TABS.SETTINGS} onClick={() => setActiveTab(TABS.SETTINGS)} />
       </nav>
     </div>
+    </>
   );
 }
 
