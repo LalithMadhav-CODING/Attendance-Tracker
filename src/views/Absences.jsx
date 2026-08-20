@@ -2,14 +2,35 @@ import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 
 export default function Absences({ plannedAbsences, setPlannedAbsences, holidays, setHolidays, timetable, courses, settings }) {
-  const [absenceDate, setAbsenceDate] = useState('');
-  const [holidayDate, setHolidayDate] = useState('');
+  const [absenceStartDate, setAbsenceStartDate] = useState('');
+  const [absenceEndDate, setAbsenceEndDate] = useState('');
+  const [holidayStartDate, setHolidayStartDate] = useState('');
+  const [holidayEndDate, setHolidayEndDate] = useState('');
 
   const addAbsence = (e) => {
     e.preventDefault();
-    if (!absenceDate || plannedAbsences.includes(absenceDate)) return;
-    setPlannedAbsences([...plannedAbsences, absenceDate].sort());
-    setAbsenceDate('');
+    if (!absenceStartDate) return;
+
+    let curr = new Date(absenceStartDate + 'T00:00:00');
+    let end = new Date((absenceEndDate || absenceStartDate) + 'T00:00:00');
+    
+    if (end < curr) {
+      alert("End date cannot be before start date");
+      return;
+    }
+
+    const newAbsences = new Set(plannedAbsences);
+    
+    while (curr <= end) {
+      const offset = curr.getTimezoneOffset();
+      const dateStr = new Date(curr.getTime() - (offset*60*1000)).toISOString().split('T')[0];
+      newAbsences.add(dateStr);
+      curr.setDate(curr.getDate() + 1);
+    }
+    
+    setPlannedAbsences(Array.from(newAbsences).sort());
+    setAbsenceStartDate('');
+    setAbsenceEndDate('');
   };
 
   const removeAbsence = (date) => {
@@ -18,9 +39,28 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
 
   const addHoliday = (e) => {
     e.preventDefault();
-    if (!holidayDate || holidays.includes(holidayDate)) return;
-    setHolidays([...holidays, holidayDate].sort());
-    setHolidayDate('');
+    if (!holidayStartDate) return;
+
+    let curr = new Date(holidayStartDate + 'T00:00:00');
+    let end = new Date((holidayEndDate || holidayStartDate) + 'T00:00:00');
+    
+    if (end < curr) {
+      alert("End date cannot be before start date");
+      return;
+    }
+
+    const newHolidays = new Set(holidays);
+    
+    while (curr <= end) {
+      const offset = curr.getTimezoneOffset();
+      const dateStr = new Date(curr.getTime() - (offset*60*1000)).toISOString().split('T')[0];
+      newHolidays.add(dateStr);
+      curr.setDate(curr.getDate() + 1);
+    }
+    
+    setHolidays(Array.from(newHolidays).sort());
+    setHolidayStartDate('');
+    setHolidayEndDate('');
   };
 
   const removeHoliday = (date) => {
@@ -40,32 +80,12 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
 
     const target = (settings.targetAttendance || 75) / 100;
     
-    // Calculate remaining classes
-    const remainingClasses = {}; // courseId -> count
-    courses.forEach(c => remainingClasses[c.id] = 0);
-
-    let curr = new Date(today);
-    curr.setDate(curr.getDate() + 1); // Start from tomorrow
-
-    while (curr <= end) {
-      const dateStr = curr.toISOString().split('T')[0];
-      const dayOfWeek = curr.getDay();
-      
-      if (!holidays.includes(dateStr)) {
-        const classesThatDay = timetable.filter(t => t.dayOfWeek === dayOfWeek);
-        classesThatDay.forEach(t => {
-          if (remainingClasses[t.courseId] !== undefined) {
-            remainingClasses[t.courseId]++;
-          }
-        });
-      }
-      curr.setDate(curr.getDate() + 1);
-    }
 
     // Now calculate impact of planned absences
     courses.forEach(c => {
-      let finalTotal = c.total + remainingClasses[c.id];
-      let finalAttended = c.attended + remainingClasses[c.id];
+      let finalTotal = c.total;
+      // If perfect attendance from now on, final attended is total - what they already missed
+      let finalAttended = c.total - (c.missed || 0);
       
       // Subtract absences
       plannedAbsences.forEach(dateStr => {
@@ -105,9 +125,16 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
       <div className="card">
         <h3 style={{ marginBottom: '10px' }}>Skip Days</h3>
         <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '10px' }}>Select days you plan to be absent. These will count as missed classes.</p>
-        <form onSubmit={addAbsence} style={{ display: 'flex', gap: '10px' }}>
-          <input type="date" value={absenceDate} onChange={e => setAbsenceDate(e.target.value)} style={{ flex: 1 }} required />
-          <button type="submit" style={{ backgroundColor: 'var(--border-color)', padding: '10px', borderRadius: '8px' }}>Add</button>
+        <form onSubmit={addAbsence} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '16px', marginBottom: '5px' }}>From</div>
+            <input type="date" value={absenceStartDate} onChange={e => setAbsenceStartDate(e.target.value)} style={{ width: '100%' }} required />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '16px', marginBottom: '5px' }}>To (Optional)</div>
+            <input type="date" value={absenceEndDate} onChange={e => setAbsenceEndDate(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <button type="submit" style={{ backgroundColor: 'var(--border-color)', padding: '10px', borderRadius: '8px', height: '45px' }}>Add</button>
         </form>
         <div style={{ marginTop: '10px' }}>
           {plannedAbsences.map(d => (
@@ -122,9 +149,16 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
       <h2 style={{ margin: '30px 0 20px', textAlign: 'center' }}>Holidays</h2>
       <div className="card">
         <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '10px' }}>Select official holidays. Classes on these days won't be counted.</p>
-        <form onSubmit={addHoliday} style={{ display: 'flex', gap: '10px' }}>
-          <input type="date" value={holidayDate} onChange={e => setHolidayDate(e.target.value)} style={{ flex: 1 }} required />
-          <button type="submit" style={{ backgroundColor: 'var(--border-color)', padding: '10px', borderRadius: '8px' }}>Add</button>
+        <form onSubmit={addHoliday} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '16px', marginBottom: '5px' }}>From</div>
+            <input type="date" value={holidayStartDate} onChange={e => setHolidayStartDate(e.target.value)} style={{ width: '100%' }} required />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '16px', marginBottom: '5px' }}>To (Optional)</div>
+            <input type="date" value={holidayEndDate} onChange={e => setHolidayEndDate(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <button type="submit" style={{ backgroundColor: 'var(--border-color)', padding: '10px', borderRadius: '8px', height: '45px' }}>Add</button>
         </form>
         <div style={{ marginTop: '10px' }}>
           {holidays.map(d => (
