@@ -195,9 +195,19 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
         </form>
         <div style={{ marginTop: '10px' }}>
           {holidays.map(h => (
-            <div key={h.date} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-              <span>{h.date} {h.name ? `- ${h.name}` : ''}</span>
-              <button onClick={() => removeHoliday(h.date)}><Trash2 size={20} color="var(--btn-cross)"/></button>
+            <div key={h.date} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', alignItems: 'center' }}>
+              <span style={{ 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                flex: 1, 
+                marginRight: '10px' 
+              }}>
+                {h.date} {h.name ? `- ${h.name}` : ''}
+              </span>
+              <button onClick={() => removeHoliday(h.date)} style={{ flexShrink: 0 }}>
+                <Trash2 size={20} color="var(--btn-cross)"/>
+              </button>
             </div>
           ))}
         </div>
