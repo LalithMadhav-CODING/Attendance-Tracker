@@ -154,12 +154,12 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
       <div className="card">
         <h3 style={{ marginBottom: '10px' }}>Skip Days</h3>
         <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '10px' }}>Select days you plan to be absent. These will count as missed classes.</p>
-        <form onSubmit={addAbsence} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
+        <form onSubmit={addAbsence} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 140px' }}>
             <div style={{ fontSize: '16px', marginBottom: '5px' }}>From</div>
             <input type="date" value={absenceStartDate} onChange={e => setAbsenceStartDate(e.target.value)} style={{ width: '100%' }} required />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: '1 1 140px' }}>
             <div style={{ fontSize: '16px', marginBottom: '5px' }}>To (Optional)</div>
             <input type="date" value={absenceEndDate} onChange={e => setAbsenceEndDate(e.target.value)} style={{ width: '100%' }} />
           </div>
@@ -178,16 +178,16 @@ export default function Absences({ plannedAbsences, setPlannedAbsences, holidays
       <h2 style={{ margin: '30px 0 20px', textAlign: 'center' }}>Holidays</h2>
       <div className="card">
         <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '10px' }}>Select official holidays. Classes on these days won't be counted.</p>
-        <form onSubmit={addHoliday} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
+        <form onSubmit={addHoliday} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 140px' }}>
             <div style={{ fontSize: '16px', marginBottom: '5px' }}>From</div>
             <input type="date" value={holidayStartDate} onChange={e => setHolidayStartDate(e.target.value)} style={{ width: '100%' }} required />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: '1 1 140px' }}>
             <div style={{ fontSize: '16px', marginBottom: '5px' }}>To (Optional)</div>
             <input type="date" value={holidayEndDate} onChange={e => setHolidayEndDate(e.target.value)} style={{ width: '100%' }} />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: '1 1 140px' }}>
             <div style={{ fontSize: '16px', marginBottom: '5px' }}>Name (Optional)</div>
             <input placeholder="e.g. Thanksgiving" value={holidayName} onChange={e => setHolidayName(e.target.value)} style={{ width: '100%' }} />
           </div>

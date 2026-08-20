@@ -48,8 +48,8 @@ export default function SettingsView({ settings, setSettings }) {
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: '1 1 200px' }}>
             <span>Semester Start Date</span>
             <input 
               type="date" 
@@ -63,7 +63,7 @@ export default function SettingsView({ settings, setSettings }) {
               }} 
             />
           </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: '1 1 200px' }}>
             <span>Semester End Date</span>
             <input 
               type="date" 
