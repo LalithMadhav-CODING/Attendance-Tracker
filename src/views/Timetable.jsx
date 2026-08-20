@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 export default function Timetable({ courses, setCourses, timetable, setTimetable }) {
   const [newCourseName, setNewCourseName] = useState('');
   const [initAttended, setInitAttended] = useState(0);
+  const [initMissed, setInitMissed] = useState(0);
   const [initTotal, setInitTotal] = useState(0);
 
   const [tDay, setTDay] = useState('1'); // Monday default
@@ -16,14 +17,26 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
   const addCourse = (e) => {
     e.preventDefault();
     if (!newCourseName.trim()) return;
+    
+    const attended = Math.max(0, parseInt(initAttended) || 0);
+    const missed = Math.max(0, parseInt(initMissed) || 0);
+    const total = Math.max(0, parseInt(initTotal) || 0);
+    
+    if (attended + missed > total) {
+      alert("Attended + Missed cannot exceed Total Classes.");
+      return;
+    }
+
     setCourses([...courses, {
       id: Date.now().toString(),
-      name: newCourseName,
-      attended: parseInt(initAttended) || 0,
-      total: parseInt(initTotal) || 0
+      name: newCourseName.trim(),
+      attended: attended,
+      missed: missed,
+      total: total
     }]);
     setNewCourseName('');
     setInitAttended(0);
+    setInitMissed(0);
     setInitTotal(0);
   };
 
@@ -58,12 +71,16 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
           <input placeholder="Course Name" value={newCourseName} onChange={e => setNewCourseName(e.target.value)} required />
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '16px' }}>Initial Attended</label>
-              <input type="number" value={initAttended} onChange={e => setInitAttended(e.target.value)} style={{ width: '100%' }} />
+              <label style={{ fontSize: '16px' }}>Attended</label>
+              <input type="number" min="0" value={initAttended} onChange={e => setInitAttended(e.target.value)} style={{ width: '100%' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '16px' }}>Initial Total</label>
-              <input type="number" value={initTotal} onChange={e => setInitTotal(e.target.value)} style={{ width: '100%' }} />
+              <label style={{ fontSize: '16px' }}>Missed</label>
+              <input type="number" min="0" value={initMissed} onChange={e => setInitMissed(e.target.value)} style={{ width: '100%' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '16px' }}>Total Classes</label>
+              <input type="number" min="0" value={initTotal} onChange={e => setInitTotal(e.target.value)} style={{ width: '100%' }} />
             </div>
           </div>
           <button type="submit" style={{ backgroundColor: 'var(--border-color)', padding: '10px', borderRadius: '8px' }}>Add Course</button>

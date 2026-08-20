@@ -32,14 +32,17 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
       if (c.id === courseId) {
         let newAttended = c.attended;
         let newTotal = c.total;
+        let newMissed = c.missed || 0;
         
         if (currentLog === 'attended') { newAttended--; }
         if (currentLog === 'cancelled') { newTotal++; }
+        if (currentLog === 'missed') { newMissed--; }
 
         if (status === 'attended') { newAttended++; }
         if (status === 'cancelled') { newTotal--; }
+        if (status === 'missed') { newMissed++; }
 
-        return { ...c, attended: newAttended, total: newTotal };
+        return { ...c, attended: newAttended, total: newTotal, missed: newMissed };
       }
       return c;
     }));
@@ -153,7 +156,9 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
             
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
               <div>
+                <div>CLASSES LEFT: {Math.max(0, course.total - (course.attended + (course.missed || 0)))}</div>
                 <div>ATTENDED: {course.attended}</div>
+                <div>MISSED: {course.missed || 0}</div>
                 <div style={{ borderBottom: '2px solid var(--btn-check)', display: 'inline-block', marginBottom: '10px' }}>
                   TOTAL: {course.total}
                 </div>
