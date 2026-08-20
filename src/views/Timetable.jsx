@@ -41,8 +41,10 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
   };
 
   const deleteCourse = (id) => {
-    setCourses(courses.filter(c => c.id !== id));
-    setTimetable(timetable.filter(t => t.courseId !== id));
+    if (window.confirm("Are you sure you want to delete this course?")) {
+      setCourses(courses.filter(c => c.id !== id));
+      setTimetable(timetable.filter(t => t.courseId !== id));
+    }
   };
 
   const addTimetableEntry = (e) => {
