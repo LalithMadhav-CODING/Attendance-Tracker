@@ -18,15 +18,35 @@ export default function SettingsView({ settings, setSettings }) {
       <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>Settings</h2>
       
       <div className="card">
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '20px' }}>
-          <span>Target Attendance (%)</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Target Attendance</span>
+            <span style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+              {settings.targetAttendance ?? 75}%
+            </span>
+          </div>
           <input 
-            type="number" 
+            type="range" 
             min="1" max="100" 
-            value={settings.targetAttendance || 75} 
+            value={settings.targetAttendance ?? 75} 
             onChange={(e) => updateSetting('targetAttendance', parseInt(e.target.value))} 
+            style={{ 
+              width: '100%', 
+              accentColor: 'var(--btn-cross)', 
+              cursor: 'pointer',
+              padding: '6px 0',
+              background: 'transparent',
+              border: 'none'
+            }} 
           />
-        </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', color: 'var(--text-secondary)' }}>
+            <span>1%</span>
+            <span>25%</span>
+            <span>50%</span>
+            <span>75%</span>
+            <span>100%</span>
+          </div>
+        </div>
         
         <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '20px' }}>
           <span>Semester End Date</span>
