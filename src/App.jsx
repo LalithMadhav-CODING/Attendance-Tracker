@@ -34,7 +34,7 @@ function App() {
   const [extraClasses, setExtraClasses] = useLocalStorage('at_extraClasses', []);
   // attendanceLogs: { 'YYYY-MM-DD': { timetableId: 'attended' | 'missed' } }
 
-  useNotifications(timetable, extraClasses, holidays, settings, courses);
+  useNotifications(timetable, extraClasses, holidays, settings, courses, plannedAbsences);
 
   const renderTab = () => {
     switch (activeTab) {
