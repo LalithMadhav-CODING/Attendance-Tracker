@@ -61,10 +61,29 @@ export function useNotifications(timetable, extraClasses, holidays, settings, co
 
       // Read notified log from localStorage
       let notifiedLog = {};
+      let scheduledTriggers = {};
       try {
         notifiedLog = JSON.parse(localStorage.getItem('at_notified_classes') || '{}');
       } catch {
         notifiedLog = {};
+      }
+      try {
+        scheduledTriggers = JSON.parse(localStorage.getItem('at_scheduled_triggers') || '{}');
+      } catch {
+        scheduledTriggers = {};
+      }
+
+      // Cleanup old scheduled triggers (older than 24h)
+      const currentMs = Date.now();
+      let triggersCleaned = false;
+      Object.keys(scheduledTriggers).forEach(key => {
+        if (scheduledTriggers[key] < currentMs - (24 * 60 * 60 * 1000)) {
+          delete scheduledTriggers[key];
+          triggersCleaned = true;
+        }
+      });
+      if (triggersCleaned) {
+        localStorage.setItem('at_scheduled_triggers', JSON.stringify(scheduledTriggers));
       }
 
       todaysClasses.forEach(tClass => {
@@ -75,7 +94,6 @@ export function useNotifications(timetable, extraClasses, holidays, settings, co
         const classDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
         const classTimeMs = classDate.getTime();
         const notifyTargetMs = classTimeMs - offsetMs;
-        const currentMs = Date.now();
 
         const logKey = `${todayDate}_${tClass.id}_${tClass.time}`;
 
@@ -96,16 +114,28 @@ export function useNotifications(timetable, extraClasses, holidays, settings, co
 
         // Also schedule experimental background TimestampTrigger if supported and time is in future
         if (notifyTargetMs > currentMs && 'showTrigger' in Notification.prototype && 'TimestampTrigger' in window) {
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(reg => {
-              reg.showNotification(`Upcoming Class: ${course.name}`, {
-                body: `Starts at ${tClass.time} in ${tClass.classroom || 'Classroom'}`,
-                icon: '/icon-512.png',
-                tag: `trigger-${logKey}`,
-                renotify: true,
-                showTrigger: new window.TimestampTrigger(notifyTargetMs)
-              }).catch(() => {});
-            });
+          if (!scheduledTriggers[logKey]) {
+            // Optimistically mark as scheduled to prevent rapid duplicate attempts
+            scheduledTriggers[logKey] = notifyTargetMs;
+            localStorage.setItem('at_scheduled_triggers', JSON.stringify(scheduledTriggers));
+            
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(`Upcoming Class: ${course.name}`, {
+                  body: `Starts at ${tClass.time} in ${tClass.classroom || 'Classroom'}`,
+                  icon: '/icon-512.png',
+                  tag: `trigger-${logKey}`,
+                  renotify: true,
+                  showTrigger: new window.TimestampTrigger(notifyTargetMs),
+                  data: { classId: tClass.id, url: '/' }
+                }).catch((err) => {
+                  console.error('Trigger scheduling failed:', err);
+                  // Remove on failure so we can try again
+                  delete scheduledTriggers[logKey];
+                  localStorage.setItem('at_scheduled_triggers', JSON.stringify(scheduledTriggers));
+                });
+              });
+            }
           }
         }
       });

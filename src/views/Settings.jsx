@@ -13,6 +13,8 @@ export default function SettingsView({ settings, setSettings }) {
     }
   };
 
+  const triggersSupported = typeof window !== 'undefined' && 'Notification' in window && 'showTrigger' in Notification.prototype && 'TimestampTrigger' in window;
+
   return (
     <div>
       <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>Settings</h2>
@@ -126,6 +128,23 @@ export default function SettingsView({ settings, setSettings }) {
               onChange={(e) => updateSetting('notificationOffset', parseInt(e.target.value) || 0)} 
             />
           </label>
+
+          {settings.notificationsEnabled && !triggersSupported && (
+            <div style={{ 
+              backgroundColor: 'rgba(255, 165, 0, 0.1)', 
+              border: '1px solid orange', 
+              color: 'orange', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              fontSize: '14px',
+              lineHeight: '1.4'
+            }}>
+              <strong>Note:</strong> Offline notifications when the app is completely closed require an experimental browser feature. 
+              On Android Chrome, copy and paste this into your URL bar to enable it:<br />
+              <code style={{ display: 'block', marginTop: '8px', padding: '6px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '4px', wordBreak: 'break-all' }}>chrome://flags/#enable-experimental-web-platform-features</code>
+            </div>
+          )}
 
           {settings.notificationsEnabled && (
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
