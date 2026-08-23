@@ -9,6 +9,18 @@
   --progress-bg: #2a180b;
   --progress-fill: #b36e40;
   --font-main: 'VT323', monospace;
+
+  /* Calendar specific theme tokens */
+  --cal-sem-start-bg: #1e3a5f;
+  --cal-sem-start-text: #8fb1e6;
+  --cal-sem-end-bg: #1e4d5f;
+  --cal-sem-end-text: #8fcae6;
+  --cal-holiday-bg: #274a2b;
+  --cal-holiday-text: #8cff9a;
+  --cal-skip-bg: #5c2317;
+  --cal-skip-text: #ff7b5a;
+  --cal-out-bg: #1a1511;
+  --cal-out-text: #605040;
 }
 
 * {
@@ -35,7 +47,10 @@ body {
   flex-direction: column;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-weight: normal;
   letter-spacing: 2px;
 }
@@ -57,7 +72,8 @@ button:hover {
   filter: brightness(1.2);
 }
 
-input, select {
+input,
+select {
   font-family: var(--font-main);
   background: var(--progress-bg);
   color: var(--text-primary);
@@ -68,7 +84,8 @@ input, select {
   outline: none;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   border-color: var(--text-primary);
 }
 
@@ -77,7 +94,7 @@ input:focus, select:focus {
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -88,13 +105,16 @@ input:focus, select:focus {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-color);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--border-color);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
@@ -106,7 +126,7 @@ input:focus, select:focus {
   background-color: var(--card-bg);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   border: 1px solid var(--border-color);
 }
 
@@ -118,6 +138,7 @@ input:focus, select:focus {
   color: var(--text-secondary);
   background-color: rgba(0, 0, 0, 0.2);
 }
+
 .calendar-header-cell:nth-child(7n) {
   border-right: none;
 }
@@ -134,6 +155,7 @@ input:focus, select:focus {
   transition: all 0.15s ease;
   position: relative;
 }
+
 .calendar-cell:nth-child(7n) {
   border-right: none;
 }
@@ -148,7 +170,7 @@ input:focus, select:focus {
   transform: scale(1.1);
   z-index: 2;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   border-right: none;
   border-bottom: none;
 }
@@ -162,7 +184,7 @@ input:focus, select:focus {
   border-radius: 8px;
   border-right: none;
   border-bottom: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .calendar-cell.today::after {
@@ -186,4 +208,39 @@ input:focus, select:focus {
 
 .calendar-cell.no-classes {
   color: var(--text-secondary);
+}
+
+.calendar-cell.out-of-semester {
+  background-color: var(--cal-out-bg);
+  color: var(--cal-out-text);
+  font-weight: normal;
+  border-right: 1px solid rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+.calendar-cell.out-of-semester.today::after {
+  background-color: var(--cal-out-text);
+}
+
+.calendar-cell.skip-day {
+  background-color: var(--cal-skip-bg);
+  color: var(--cal-skip-text);
+  font-weight: bold;
+}
+
+.calendar-cell.semester-start {
+  background-color: var(--cal-sem-start-bg);
+  color: var(--cal-sem-start-text);
+  font-weight: bold;
+}
+
+.calendar-cell.semester-end {
+  background-color: var(--cal-sem-end-bg);
+  color: var(--cal-sem-end-text);
+  font-weight: bold;
+}
+
+.calendar-cell.holiday {
+  background-color: var(--cal-holiday-bg);
+  color: var(--cal-holiday-text);
+  font-weight: bold;
 }

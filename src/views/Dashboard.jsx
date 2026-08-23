@@ -1,26 +1,35 @@
 import React, { useState } from 'react';
 import { Check, X, MoreVertical, Plus } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
-export default function Dashboard({ courses, setCourses, timetable, attendanceLogs, setAttendanceLogs, settings, holidays, extraClasses, setExtraClasses }) {
+export default function Dashboard({ courses, setCourses, timetable, attendanceLogs, setAttendanceLogs, settings, holidays, plannedAbsences, extraClasses, setExtraClasses }) {
   const [todayDate] = useState(() => {
     const today = new Date();
     const offset = today.getTimezoneOffset();
-    return new Date(today.getTime() - (offset*60*1000)).toISOString().split('T')[0];
+    return new Date(today.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
   });
-  
+
   const [selectedDate, setSelectedDate] = useState(todayDate);
   const [calMonth, setCalMonth] = useState(parseInt(todayDate.split('-')[1]) - 1);
   const [calYear, setCalYear] = useState(parseInt(todayDate.split('-')[0]));
-  
-  const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay(); 
-  
+
+  const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay();
+
   const isHoliday = holidays.some(h => h.date === selectedDate);
-  
+  const isOutOfSemester = (settings.semesterStartDate && selectedDate < settings.semesterStartDate) || 
+                          (settings.semesterEndDate && selectedDate > settings.semesterEndDate);
+  const isSkipDay = plannedAbsences?.includes(selectedDate);
+
   const todaysExtra = (extraClasses || []).filter(e => e.date === selectedDate);
+  
+  const regularClasses = isOutOfSemester 
+    ? [] 
+    : timetable.filter(t => parseInt(t.dayOfWeek) === dayOfWeek).map(t => ({ ...t, isExtra: false, isSkipDay }));
+
   const todaysClasses = [
-    ...timetable.filter(t => parseInt(t.dayOfWeek) === dayOfWeek).map(t => ({...t, isExtra: false})), 
-    ...todaysExtra.map(t => ({...t, isExtra: true}))
-  ].sort((a,b) => a.time.localeCompare(b.time));
+    ...regularClasses,
+    ...todaysExtra.map(t => ({ ...t, isExtra: true, isSkipDay }))
+  ].sort((a, b) => a.time.localeCompare(b.time));
 
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [showExtraModal, setShowExtraModal] = useState(false);
@@ -28,10 +37,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
   const [eTime, setETime] = useState('');
   const [eClassroom, setEClassroom] = useState('');
   const [attendanceConfirm, setAttendanceConfirm] = useState(null);
-
-  if (isHoliday) {
-    return <div style={{ textAlign: 'center', marginTop: '50px' }}><h2>Enjoy your holiday!</h2></div>;
-  }
+  const [confirmState, setConfirmState] = useState({ isOpen: false, message: '', onConfirm: null });
 
   const executeAttendance = (timetableItem, courseId, status) => {
     const currentLog = attendanceLogs[selectedDate]?.[timetableItem.id];
@@ -44,7 +50,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
         let newAttended = c.attended;
         let newTotal = c.total;
         let newMissed = c.missed || 0;
-        
+
         if (currentLog === 'attended') { newAttended--; }
         if (currentLog === 'cancelled') { newTotal++; }
         if (currentLog === 'missed') { newMissed--; }
@@ -83,43 +89,53 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
 
   const addExtraClass = (e) => {
     e.preventDefault();
-    if(!eCourse || !eTime || !eClassroom) return;
-    
+    if (!eCourse || !eTime || !eClassroom) return;
+
     if (holidays.some(h => h.date === selectedDate)) {
-        alert("Cannot add an extra class on a holiday.");
-        return;
+      alert("Cannot add an extra class on a holiday.");
+      return;
     }
-    
+
+    const finishAddingExtraClass = () => {
+      setExtraClasses([...(extraClasses || []), {
+        id: 'ext_' + Date.now(),
+        date: selectedDate,
+        courseId: eCourse,
+        time: eTime,
+        classroom: eClassroom
+      }]);
+
+      setCourses(prev => prev.map(c => {
+        if (c.id === eCourse) return { ...c, total: c.total + 1 };
+        return c;
+      }));
+
+      setShowExtraModal(false);
+      setECourse('');
+      setETime('');
+      setEClassroom('');
+    };
+
     if (todaysClasses.some(t => t.time === eTime)) {
-        if (!window.confirm("A class is already scheduled at this time today. Are you sure you want to add this extra class?")) {
-            return;
+      setConfirmState({
+        isOpen: true,
+        message: "A class is already scheduled at this time today. Are you sure you want to add this extra class?",
+        onConfirm: () => {
+          finishAddingExtraClass();
+          setConfirmState({ isOpen: false });
         }
+      });
+      return;
     }
 
-    setExtraClasses([...(extraClasses || []), {
-      id: 'ext_' + Date.now(),
-      date: selectedDate,
-      courseId: eCourse,
-      time: eTime,
-      classroom: eClassroom
-    }]);
-    
-    setCourses(prev => prev.map(c => {
-      if (c.id === eCourse) return { ...c, total: c.total + 1 };
-      return c;
-    }));
-
-    setShowExtraModal(false);
-    setECourse('');
-    setETime('');
-    setEClassroom('');
+    finishAddingExtraClass();
   };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ margin: 0 }}>{selectedDate === todayDate ? "Today's Classes" : `Classes for ${selectedDate}`}</h2>
-        <button 
+        <button
           onClick={() => setShowExtraModal(true)}
           style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'var(--border-color)', padding: '8px 12px', borderRadius: '8px' }}
         >
@@ -145,24 +161,32 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
         </div>
       )}
 
-      {todaysClasses.length === 0 && !showExtraModal && (
-        <div style={{ textAlign: 'center', marginTop: '50px' }}><h2>No classes today!</h2></div>
+      {isHoliday ? (
+        <div style={{ textAlign: 'center', marginTop: '50px', marginBottom: '50px' }}>
+          <h2>Enjoy your holiday!</h2>
+        </div>
+      ) : (
+        <>
+          {todaysClasses.length === 0 && !showExtraModal && (
+            <div style={{ textAlign: 'center', marginTop: '50px', marginBottom: '50px' }}><h2>No classes today!</h2></div>
+          )}
+        </>
       )}
 
-      {todaysClasses.map(tClass => {
+      {(!isHoliday) && todaysClasses.map(tClass => {
         const course = courses.find(c => c.id === tClass.courseId);
         if (!course) return null;
-        
+
         const log = attendanceLogs[selectedDate]?.[tClass.id];
         const isCancelled = log === 'cancelled';
         const percent = course.total === 0 ? 0 : Math.round((course.attended / course.total) * 100);
         const target = (settings.targetAttendance || 75) / 100;
-        
+
         let statusText = '';
         if (course.total > 0) {
           const requiredAttended = Math.ceil(target * course.total);
           const remainingNeeded = requiredAttended - course.attended;
-          
+
           if (remainingNeeded > 0) {
             statusText = `You must attend\n${remainingNeeded} class${remainingNeeded !== 1 ? 'es' : ''}`;
           } else {
@@ -172,8 +196,15 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
           statusText = "No classes recorded yet";
         }
 
+        const isDisabled = isCancelled || tClass.isSkipDay;
+        const opacityValue = tClass.isSkipDay ? 0.4 : (isCancelled ? 0.6 : 1);
+        const grayscaleValue = tClass.isSkipDay ? 'grayscale(0.8)' : 'none';
+
+        let disableReasonText = statusText;
+        if (tClass.isSkipDay) disableReasonText = 'Planned Absence';
+
         return (
-          <div key={tClass.id} className="card" style={{ opacity: isCancelled ? 0.6 : 1 }}>
+          <div key={tClass.id} className="card" style={{ opacity: opacityValue, filter: grayscaleValue }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <h1 style={{ fontSize: '32px', margin: 0 }}>
@@ -181,13 +212,14 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
                   {tClass.isExtra && <span style={{ fontSize: '18px', color: 'var(--text-secondary)', marginLeft: '10px', verticalAlign: 'middle' }}>(Extra Class)</span>}
                 </h1>
                 {isCancelled && <span style={{ backgroundColor: 'var(--btn-cross)', padding: '2px 8px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold' }}>CANCELLED</span>}
+                {tClass.isSkipDay && <span style={{ backgroundColor: 'var(--cal-skip-bg)', color: 'var(--cal-skip-text)', padding: '2px 8px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold' }}>PLANNED ABSENCE</span>}
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>{tClass.time}</div>
                 <div style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>{tClass.classroom}</div>
               </div>
             </div>
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
               <div>
                 <div>CLASSES LEFT: {Math.max(0, course.total - (course.attended + (course.missed || 0)))}</div>
@@ -196,62 +228,63 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
                 <div style={{ borderBottom: '2px solid var(--btn-check)', display: 'inline-block', marginBottom: '10px' }}>
                   TOTAL: {course.total}
                 </div>
-                <div style={{ whiteSpace: 'pre-line', fontSize: '20px' }}>{statusText}</div>
+                <div style={{ whiteSpace: 'pre-line', fontSize: '20px' }}>{disableReasonText}</div>
               </div>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '120px' }}>
                 <div style={{ width: '100%', height: '10px', backgroundColor: 'var(--progress-bg)', borderRadius: '5px', overflow: 'hidden', marginBottom: '5px' }}>
                   <div style={{ width: `${percent}%`, height: '100%', backgroundColor: 'var(--progress-fill)', transition: 'width 0.5s ease' }}></div>
                 </div>
                 <h1 style={{ fontSize: '42px', margin: '0 0 10px 0' }}>{percent}%</h1>
                 <div style={{ display: 'flex', gap: '10px', position: 'relative' }}>
-                  <button 
+                  <button
                     onClick={() => handleAttendanceClick(tClass, course.id, 'attended')}
-                    disabled={isCancelled}
-                    style={{ 
+                    disabled={isDisabled}
+                    style={{
                       backgroundColor: log === 'attended' ? 'var(--btn-check)' : 'transparent',
                       border: '2px solid var(--btn-check)',
                       borderRadius: '50%', width: '40px', height: '40px',
                       display: 'flex', justifyContent: 'center', alignItems: 'center',
-                      opacity: isCancelled ? 0.5 : 1,
-                      cursor: isCancelled ? 'not-allowed' : 'pointer'
+                      opacity: isDisabled ? 0.5 : 1,
+                      cursor: isDisabled ? 'not-allowed' : 'pointer'
                     }}
                   >
                     <Check size={24} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleAttendanceClick(tClass, course.id, 'missed')}
-                    disabled={isCancelled}
-                    style={{ 
+                    disabled={isDisabled}
+                    style={{
                       backgroundColor: log === 'missed' ? 'var(--btn-cross)' : 'transparent',
                       border: '2px solid var(--btn-cross)',
                       borderRadius: '50%', width: '40px', height: '40px',
                       display: 'flex', justifyContent: 'center', alignItems: 'center',
-                      opacity: isCancelled ? 0.5 : 1,
-                      cursor: isCancelled ? 'not-allowed' : 'pointer'
+                      opacity: isDisabled ? 0.5 : 1,
+                      cursor: isDisabled ? 'not-allowed' : 'pointer'
                     }}
                   >
                     <X size={24} />
                   </button>
-                  
+
                   <div style={{ position: 'relative' }}>
-                    <button 
+                    <button
                       onClick={() => setMenuOpenId(menuOpenId === tClass.id ? null : tClass.id)}
-                      style={{ padding: '8px', color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                      disabled={tClass.isSkipDay}
+                      style={{ padding: '8px', color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: tClass.isSkipDay ? 'not-allowed' : 'pointer', opacity: tClass.isSkipDay ? 0.5 : 1 }}
                     >
                       <MoreVertical size={24} />
                     </button>
                     {menuOpenId === tClass.id && (
-                      <div style={{ 
-                        position: 'absolute', right: 0, top: '40px', 
-                        backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', 
+                      <div style={{
+                        position: 'absolute', right: 0, top: '40px',
+                        backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)',
                         padding: '5px', borderRadius: '8px', zIndex: 10, width: '140px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                       }}>
-                        <button 
-                          onClick={() => { 
-                            handleAttendanceClick(tClass, course.id, isCancelled ? 'none' : 'cancelled'); 
-                            setMenuOpenId(null); 
+                        <button
+                          onClick={() => {
+                            handleAttendanceClick(tClass, course.id, isCancelled ? 'none' : 'cancelled');
+                            setMenuOpenId(null);
                           }}
                           style={{ width: '100%', padding: '10px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isCancelled ? 'var(--text-primary)' : 'var(--btn-cross)' }}
                         >
@@ -271,33 +304,53 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <h3 style={{ margin: 0, fontSize: '24px' }}>Calendar</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <button onClick={() => { if(calMonth === 0) { setCalMonth(11); setCalYear(calYear-1); } else { setCalMonth(calMonth-1); } }} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer' }}>&lt;</button>
+            <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else { setCalMonth(calMonth - 1); } }} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer' }}>&lt;</button>
             <span style={{ fontSize: '18px', width: '140px', textAlign: 'center' }}>
               {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][calMonth]} {calYear}
             </span>
-            <button onClick={() => { if(calMonth === 11) { setCalMonth(0); setCalYear(calYear+1); } else { setCalMonth(calMonth+1); } }} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer' }}>&gt;</button>
+            <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else { setCalMonth(calMonth + 1); } }} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer' }}>&gt;</button>
           </div>
         </div>
         <div className="calendar-grid">
-          {['S','M','T','W','T','F','S'].map((d, i) => <div key={`h-${i}`} className="calendar-header-cell">{d}</div>)}
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={`h-${i}`} className="calendar-header-cell">{d}</div>)}
           {Array.from({ length: new Date(calYear, calMonth, 1).getDay() }).map((_, i) => (
             <div key={`empty-${i}`} className="calendar-cell empty"></div>
           ))}
           {Array.from({ length: new Date(calYear, calMonth + 1, 0).getDate() }).map((_, i) => {
-            const dateStr = `${calYear}-${String(calMonth+1).padStart(2, '0')}-${String(i+1).padStart(2, '0')}`;
+            const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
             const isSelected = dateStr === selectedDate;
             const isToday = dateStr === todayDate;
-            const hasClasses = timetable.some(t => parseInt(t.dayOfWeek) === new Date(dateStr + 'T00:00:00').getDay());
-            
+            let hasClasses = timetable.some(t => parseInt(t.dayOfWeek) === new Date(dateStr + 'T00:00:00').getDay());
+            if (settings.semesterStartDate && dateStr < settings.semesterStartDate) hasClasses = false;
+            if (settings.semesterEndDate && dateStr > settings.semesterEndDate) hasClasses = false;
+
+            const isHolidayDay = holidays.some(h => h.date === dateStr);
+            const isSemesterStart = settings.semesterStartDate === dateStr;
+            const isSemesterEnd = settings.semesterEndDate === dateStr;
+            const isOutOfSemesterCal = (settings.semesterStartDate && dateStr < settings.semesterStartDate) || 
+                              (settings.semesterEndDate && dateStr > settings.semesterEndDate);
+            const isSkipDayCal = plannedAbsences?.includes(dateStr);
+
             let classNames = 'calendar-cell';
+            
+            // Base state modifiers
+            if (isOutOfSemesterCal) classNames += ' out-of-semester';
+            else if (isSkipDayCal) classNames += ' skip-day';
+            else if (isHolidayDay) classNames += ' holiday';
+            else if (isSemesterStart) classNames += ' semester-start';
+            else if (isSemesterEnd) classNames += ' semester-end';
+
+            // Interaction and class modifiers
             if (isSelected) classNames += ' selected';
             if (isToday) classNames += ' today';
-            if (hasClasses) classNames += ' has-classes';
-            else classNames += ' no-classes';
+            if (!isOutOfSemesterCal && !isSkipDayCal && !isHolidayDay) {
+              if (hasClasses) classNames += ' has-classes';
+              else classNames += ' no-classes';
+            }
 
             return (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={classNames}
                 onClick={() => setSelectedDate(dateStr)}
               >
@@ -320,7 +373,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
               You are modifying attendance for a date that is not today ({selectedDate}). Are you sure you want to proceed?
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
+              <button
                 onClick={() => {
                   executeAttendance(attendanceConfirm.item, attendanceConfirm.courseId, attendanceConfirm.status);
                   setAttendanceConfirm(null);
@@ -329,7 +382,7 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
               >
                 Proceed
               </button>
-              <button 
+              <button
                 onClick={() => setAttendanceConfirm(null)}
                 style={{ flex: 1, backgroundColor: 'transparent', border: '1px solid var(--border-color)', padding: '10px', borderRadius: '8px' }}
               >
@@ -339,6 +392,13 @@ export default function Dashboard({ courses, setCourses, timetable, attendanceLo
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
     </div>
   );
 }

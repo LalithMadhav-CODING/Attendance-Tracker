@@ -45,6 +45,7 @@ function App() {
           attendanceLogs={attendanceLogs} setAttendanceLogs={setAttendanceLogs}
           settings={settings}
           holidays={holidays}
+          plannedAbsences={plannedAbsences}
           extraClasses={extraClasses} setExtraClasses={setExtraClasses}
         />;
       case TABS.TIMETABLE:

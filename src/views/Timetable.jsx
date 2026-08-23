@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Trash2, Pencil, Check } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Timetable({ courses, setCourses, timetable, setTimetable }) {
+  const [confirmState, setConfirmState] = useState({ isOpen: false, message: '', onConfirm: null });
+
   const [newCourseName, setNewCourseName] = useState('');
   const [initAttended, setInitAttended] = useState(0);
   const [initMissed, setInitMissed] = useState(0);
@@ -76,10 +79,15 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
   };
 
   const deleteCourse = (id) => {
-    if (window.confirm("Are you sure you want to delete this course?")) {
-      setCourses(courses.filter(c => c.id !== id));
-      setTimetable(timetable.filter(t => t.courseId !== id));
-    }
+    setConfirmState({
+      isOpen: true,
+      message: "Are you sure you want to delete this course?",
+      onConfirm: () => {
+        setCourses(courses.filter(c => c.id !== id));
+        setTimetable(timetable.filter(t => t.courseId !== id));
+        setConfirmState({ isOpen: false });
+      }
+    });
   };
 
   const addTimetableEntry = (e) => {
@@ -94,9 +102,23 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
     }
     
     if (timetable.some(t => t.dayOfWeek === dayInt && t.time === tTime)) {
-      if (!window.confirm("Another class is already scheduled at this time. Are you sure you want to add it?")) {
-        return;
-      }
+      setConfirmState({
+        isOpen: true,
+        message: "Another class is already scheduled at this time. Are you sure you want to add it?",
+        onConfirm: () => {
+          setTimetable([...timetable, {
+            id: Date.now().toString(),
+            dayOfWeek: dayInt,
+            courseId: tCourse,
+            time: tTime,
+            classroom: tClassroom
+          }]);
+          setTTime('');
+          setTClassroom('');
+          setConfirmState({ isOpen: false });
+        }
+      });
+      return;
     }
 
     setTimetable([...timetable, {
@@ -111,7 +133,14 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
   };
 
   const deleteTimetableEntry = (id) => {
-    setTimetable(timetable.filter(t => t.id !== id));
+    setConfirmState({
+      isOpen: true,
+      message: "Are you sure you want to delete this class?",
+      onConfirm: () => {
+        setTimetable(timetable.filter(t => t.id !== id));
+        setConfirmState({ isOpen: false });
+      }
+    });
   };
 
   return (
@@ -209,6 +238,13 @@ export default function Timetable({ courses, setCourses, timetable, setTimetable
           </div>
         );
       })}
+      
+      <ConfirmModal 
+        isOpen={confirmState.isOpen}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
     </div>
   );
 }

@@ -1,16 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { sendNotification } from '../useNotifications';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function SettingsView({ settings, setSettings }) {
+  const [confirmState, setConfirmState] = useState({ isOpen: false, message: '', onConfirm: null });
   const updateSetting = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const wipeData = () => {
-    if (window.confirm("Are you sure you want to wipe all your attendance data? This cannot be undone.")) {
-      window.localStorage.clear();
-      window.location.reload();
-    }
+    setConfirmState({
+      isOpen: true,
+      message: "Are you sure you want to wipe all your attendance data?\n\nThis cannot be undone.",
+      onConfirm: () => {
+        window.localStorage.clear();
+        window.location.reload();
+      }
+    });
   };
 
   const triggersSupported = typeof window !== 'undefined' && 'Notification' in window && 'showTrigger' in Notification.prototype && 'TimestampTrigger' in window;
@@ -212,6 +218,13 @@ export default function SettingsView({ settings, setSettings }) {
           </button>
         </div>
       </div>
+      
+      <ConfirmModal 
+        isOpen={confirmState.isOpen}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
     </div>
   );
 }
