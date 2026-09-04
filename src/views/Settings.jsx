@@ -19,6 +19,65 @@ export default function SettingsView({ settings, setSettings }) {
     });
   };
 
+  const exportData = () => {
+    const data = {
+      at_courses: localStorage.getItem('at_courses'),
+      at_timetable: localStorage.getItem('at_timetable'),
+      at_plannedAbsences: localStorage.getItem('at_plannedAbsences'),
+      at_holidays: localStorage.getItem('at_holidays'),
+      at_settings: localStorage.getItem('at_settings'),
+      at_logs: localStorage.getItem('at_logs'),
+      at_extraClasses: localStorage.getItem('at_extraClasses'),
+    };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const importData = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setConfirmState({
+      isOpen: true,
+      message: "Are you sure you want to import this backup? It will OVERWRITE all your existing attendance data.",
+      onConfirm: () => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            const keys = ['at_courses', 'at_timetable', 'at_plannedAbsences', 'at_holidays', 'at_settings', 'at_logs', 'at_extraClasses'];
+            
+            let valid = false;
+            keys.forEach(key => {
+              if (data[key] !== undefined && data[key] !== null) {
+                localStorage.setItem(key, data[key]);
+                valid = true;
+              }
+            });
+
+            if (valid) {
+              window.location.reload();
+            } else {
+              alert('Invalid backup file.');
+            }
+          } catch (err) {
+            alert('Error parsing backup file.');
+          }
+        };
+        reader.readAsText(file);
+      }
+    });
+    // clear input so the same file can be selected again
+    event.target.value = '';
+  };
+
   const triggersSupported = typeof window !== 'undefined' && 'Notification' in window && 'showTrigger' in Notification.prototype && 'TimestampTrigger' in window;
 
   return (
@@ -198,6 +257,48 @@ export default function SettingsView({ settings, setSettings }) {
               </button>
             </div>
           )}
+        </div>
+
+        <div style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+          <h3 style={{ marginBottom: '15px' }}>Data Management</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={exportData}
+              style={{
+                flex: 1,
+                backgroundColor: 'transparent',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              Export Backup
+            </button>
+            <label
+              style={{
+                flex: 1,
+                backgroundColor: 'transparent',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                textAlign: 'center'
+              }}
+            >
+              Import Backup
+              <input 
+                type="file" 
+                accept=".json" 
+                style={{ display: 'none' }} 
+                onChange={importData} 
+              />
+            </label>
+          </div>
         </div>
 
         <div style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
