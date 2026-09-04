@@ -1,9 +1,5 @@
 {
   "appId": "com.attendancetracker.app",
   "appName": "AttendTracker",
-  "webDir": "dist",
-  "server": {
-    "url": "https://at.25.vercel.app",
-    "cleartext": true
-  }
+  "webDir": "dist"
 }
