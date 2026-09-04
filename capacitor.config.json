@@ -1,5 +1,12 @@
 {
   "appId": "com.attendancetracker.app",
   "appName": "AttendTracker",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": true,
+      "statsUrl": ""
+    }
+  }
 }
+

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Home, Calendar, CalendarOff, Settings, History } from 'lucide-react';
 import { useLocalStorage } from './useLocalStorage';
 import { useNotifications } from './useNotifications';
+import { useAutoUpdate } from './useAutoUpdate';
 import Dashboard from './views/Dashboard';
 import Timetable from './views/Timetable';
 import Absences from './views/Absences';
@@ -21,6 +22,7 @@ const TABS = {
 function App() {
   const [activeTab, setActiveTab] = useState(TABS.DASHBOARD);
   const [isAppLoading, setIsAppLoading] = useState(true);
+  const { updateStatus, reloadToUpdate } = useAutoUpdate();
   
   // App State
   const [courses, setCourses] = useLocalStorage('at_courses', []);
@@ -35,6 +37,7 @@ function App() {
   // attendanceLogs: { 'YYYY-MM-DD': { timetableId: 'attended' | 'missed' } }
 
   useNotifications(timetable, extraClasses, holidays, settings, courses, plannedAbsences);
+
 
   const renderTab = () => {
     switch (activeTab) {
@@ -78,6 +81,43 @@ function App() {
   return (
     <>
       {isAppLoading && <LoadingScreen onComplete={() => setIsAppLoading(false)} />}
+      {updateStatus.available && (
+        <div style={{
+          position: 'fixed',
+          top: '16px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--btn-check)',
+          color: 'var(--text-primary)',
+          padding: '10px 16px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontSize: '14px',
+          maxWidth: '90%'
+        }}>
+          <span>✨ Update downloaded!</span>
+          <button 
+            onClick={reloadToUpdate}
+            style={{
+              backgroundColor: 'var(--btn-check)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '12px'
+            }}
+          >
+            Restart to Apply
+          </button>
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '90vh' }}>
         <header style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
           <h1 style={{ fontSize: '36px', borderBottom: '2px solid var(--border-color)', paddingBottom: '10px' }}>ATTENDANCE TRACKER</h1>
